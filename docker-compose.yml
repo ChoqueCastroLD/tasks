@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://admin:password123@mongodb:27017/
+      - DB_NAME=taskmanager
+      - JWT_SECRET=your-secret-key-change-in-production
+      - JWT_ALGORITHM=HS256
+      - JWT_EXPIRE_MINUTES=30
+      - CORS_ORIGINS=http://localhost:3000
+      - DEBUG=True
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:6.0
+    container_name: task-manager-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+    networks:
+      - task-manager-network
+
+  mongo-express:
+    image: mongo-express:1.0.0-alpha.4
+    container_name: task-manager-mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password123
+      - ME_CONFIG_MONGODB_URL=mongodb://admin:password123@mongodb:27017/
+    depends_on:
+      - mongodb
+    networks:
+      - task-manager-network
+
+volumes:
+  mongodb_data:
+    name: task-manager-mongodb-data
+
+networks:
+  task-manager-network:
+    name: task-manager-network
+    driver: bridge 

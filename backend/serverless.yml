@@ -1,0 +1,92 @@
+service: task-manager-api
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: us-east-1
+  environment:
+    MONGO_URI: ${env:MONGO_URI}
+    DB_NAME: ${env:DB_NAME}
+    JWT_SECRET: ${env:JWT_SECRET}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: 
+            - 'arn:aws:logs:${aws:region}:${aws:accountId}:log-group:/aws/lambda/${self:service}-${self:provider.stage}-*:*'
+
+package:
+  patterns:
+    - '!node_modules/**'
+    - '!.git/**'
+    - '!.env'
+    - '!.env.*'
+    - '!tests/**'
+    - '!docs/**'
+
+functions:
+  login:
+    handler: src.api.handlers.login
+    events:
+      - http:
+          path: /auth/login
+          method: post
+          cors: true
+
+  getTasks:
+    handler: src.api.handlers.get_tasks
+    events:
+      - http:
+          path: /tasks
+          method: get
+          cors: true
+
+  getTask:
+    handler: src.api.handlers.get_task
+    events:
+      - http:
+          path: /tasks/{task_id}
+          method: get
+          cors: true
+
+  createTask:
+    handler: src.api.handlers.create_task
+    events:
+      - http:
+          path: /tasks
+          method: post
+          cors: true
+
+  updateTask:
+    handler: src.api.handlers.update_task
+    events:
+      - http:
+          path: /tasks/{task_id}
+          method: put
+          cors: true
+
+  deleteTask:
+    handler: src.api.handlers.delete_task
+    events:
+      - http:
+          path: /tasks/{task_id}
+          method: delete
+          cors: true
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  pythonRequirements:
+    layer:
+      name: python-deps
+      description: Python dependencies for task manager API
+    noDeploy:
+      - pytest
+      - pytest-cov 
